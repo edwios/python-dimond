@@ -170,7 +170,9 @@ class dimond:
       if time.time() - initial >= 10:
         raise Exception("Unable to connect")
       try:
-        response = self.control.write(bytes(enc_packet))
+        response = self.control.write(bytes(enc_packet), withResponse=True)
+        time.sleep(0.3)
+        dummy = self.control.read()
         break
       except:
         self.connect()
