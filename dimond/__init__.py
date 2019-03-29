@@ -127,22 +127,24 @@ class dimond:
       self.pairing.write(bytes(packet), withResponse=True)
       time.sleep(0.3)
       data2 = self.pairing.read()
-    except:
-      raise Exception("Unable to connect")
+    except Exception as ex:
+      raise Exception("Unable to connect: %s" % ex)
 
     self.sk = generate_sk(self.name, self.password, data[0:8], data2[1:9])
 
     if self.callback is not None:
       self.device.setDelegate(Notification(self, self.callback))
       self.notification.write(bytes([0x1]), withResponse=True)
-      thread = threading.Thread(target=self.wait_for_notifications)
+      thread = threading.Thread(target=self.wait_for_notifications, args=(5,))
       thread.daemon = True
       thread.start()
 
-  def wait_for_notifications(self):
+  def wait_for_notifications(self, timeout):
+      if timeout <= 0:
+          timeout = 5
       while True:
           try:
-            self.device.waitForNotifications(-1)
+            self.device.waitForNotifications(timeout)
           except btle.BTLEInternalError:
             # If we get the response to a write then we'll break
             pass
@@ -168,11 +170,12 @@ class dimond:
     initial = time.time()
     while True:
       if time.time() - initial >= 10:
-        raise Exception("Unable to connect")
+#        raise Exception("Unable to connect")
+        print("Write failed")
+        break
       try:
-        response = self.control.write(bytes(enc_packet), withResponse=True)
-        time.sleep(0.3)
-        dummy = self.control.read()
+        self.control.write(bytes(enc_packet), withResponse=True)
+        print("Write successful")
         break
       except:
         self.connect()
